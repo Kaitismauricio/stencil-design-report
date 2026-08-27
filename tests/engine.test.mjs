@@ -7,6 +7,7 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { parseRpt, parseFilename, build, classify, apertureArea, PI } from '../src/engine.js';
+import { parseGerber } from '../src/gerber.js';
 import { toCsv } from '../src/format.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -118,6 +119,31 @@ console.log('4) formato do CSV');
   const ref = readFileSync(join(FIX, 'ST42340_DATAREPORT.csv'), 'utf8').replace(/^﻿/, '').split(/\r?\n/);
   checks++; if (out[0] !== ref[0]) bad(`cabeçalho do CSV difere:\n    ${out[0]}\n    ${ref[0]}`);
   checks++; if (out[1] !== ref[1]) bad(`1ª linha do CSV difere:\n    ${out[1]}\n    ${ref[1]}`);
+}
+
+/* ---- 5. leitor de Gerber (.gbr) — paridade com o .rpt do mesmo item (ST42364) ---- */
+console.log('5) leitor de Gerber (.gbr)');
+{
+  const gbrRows = parseGerber(readFileSync(join(FIX, '42364_PASTE.gbr'), 'latin1'), 3);
+  const rptRows = parseRpt(readFileSync(join(FIX, '3st42364.rpt'), 'latin1'), 3);
+  checks++; if (gbrRows.length !== rptRows.length) bad(`ST42364: ${gbrRows.length} D-codes no .gbr ≠ ${rptRows.length} no .rpt`);
+  const rptByD = new Map(rptRows.map(r => [r.dcode, r]));
+  for (const g of gbrRows) {
+    const r = rptByD.get(g.dcode);
+    checks++;
+    if (!r) { bad(`ST42364: d${g.dcode} presente no .gbr mas não no .rpt`); continue; }
+    if (g.shape !== r.shape) bad(`ST42364 d${g.dcode}: forma ${g.shape} ≠ ${r.shape} (.rpt)`);
+    eq(g.qty, r.qty, 0, `ST42364 d${g.dcode} flashes`);
+    eq(g.A, r.A, 0.02, `ST42364 d${g.dcode} Size A`);
+    eq(g.B, r.B, 0.02, `ST42364 d${g.dcode} Size B`);
+  }
+  const gbrReport = build(gbrRows.map(r => ({ ...r, thickness: 3 })));
+  const rptReport = build(rptRows.map(r => ({ ...r, thickness: 3 })));
+  eq(gbrReport.qty, rptReport.qty, 0, 'ST42364 qtd total (.gbr vs .rpt)');
+  // tolerância maior aqui: o .gbr carrega o diâmetro exato das aberturas redondas,
+  // enquanto o .rpt arredonda em 4 casas — a diferença de volume é só ruído de arredondamento.
+  eq(gbrReport.volCm3, rptReport.volCm3, rptReport.volCm3 * 1e-3, 'ST42364 volume cm³ (.gbr vs .rpt)');
+  console.log(`   ST42364: ${gbrRows.length} D-codes lidos do .gbr, paridade total com o .rpt`);
 }
 
 console.log(`\n${checks} verificações, ${fails} falha(s)`);

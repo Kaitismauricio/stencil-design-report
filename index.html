@@ -81,24 +81,25 @@ footer.f a{color:var(--acc)}
 <body>
 <div class="app">
   <div class="top"><span class="sq"></span><h1>STENTEC · <b>Stencil Design Report</b></h1></div>
-  <p class="sub">Envie os arquivos <code>.rpt</code> do projeto e gere o relatório em PDF + o CSV de dados.
+  <p class="sub">Envie os arquivos <code>.rpt</code> ou <code>.gbr</code> (Gerber da camada de pasta) do projeto e gere o relatório em PDF + o CSV de dados.
      Tudo é processado no seu navegador — nenhum arquivo é enviado para servidor.</p>
 
   <div class="card">
-    <h2><span class="n">1</span> Arquivos .rpt</h2>
+    <h2><span class="n">1</span> Arquivos .rpt ou .gbr</h2>
     <p class="hint">A espessura e a ST são lidas do nome do arquivo (ex.: <code>5,5st42419.rpt</code> → 5,5 mils · ST42419).
+       Um <code>.gbr</code> costuma não trazer a espessura no nome — informe manualmente na tabela abaixo.
        Se a mesma ST tiver mais de uma espessura (step), envie todos os arquivos juntos.</p>
     <div id="drop">
-      <b>Arraste os .rpt aqui</b>
-      <span>ou clique para escolher — pode selecionar vários de uma vez</span>
-      <input type="file" id="file" accept=".rpt,text/plain" multiple hidden>
+      <b>Arraste os arquivos aqui</b>
+      <span>.rpt ou .gbr — ou clique para escolher — pode selecionar vários de uma vez</span>
+      <input type="file" id="file" accept=".rpt,.gbr,.gtp,.gbp,text/plain" multiple hidden>
     </div>
     <div id="flist"></div>
     <div class="msg" id="fmsg"></div>
   </div>
 
   <div class="card">
-    <h2><span class="n">2</span> Identificação e layout</h2>
+    <h2><span class="n">2</span> Identificação</h2>
     <div class="grid2" style="margin-bottom:14px">
       <div><label class="f" for="st">ST (identificação do stencil)</label>
         <input type="text" id="st" placeholder="ST42419"></div>
@@ -108,12 +109,8 @@ footer.f a{color:var(--acc)}
           <option value="13" selected>13 primeiras (igual ao Power BI)</option>
         </select></div>
     </div>
-    <div class="seg">
-      <label><input type="radio" name="lay" value="faithful" checked>
-        <span>Fiel ao Power BI</span><em>Mesmo fundo, logo e posições do relatório atual (REV31).</em></label>
-      <label><input type="radio" name="lay" value="modern">
-        <span>Moderno</span><em>Mesmos dados e fórmulas, visual novo e mais limpo.</em></label>
-    </div>
+    <div><label class="f" for="gbrlink">Link para visualização online do projeto (opcional)</label>
+      <input type="text" id="gbrlink" placeholder="https://365.altium.com/files/..."></div>
   </div>
 
   <div class="card" id="stepcard" style="display:none">
@@ -125,8 +122,6 @@ footer.f a{color:var(--acc)}
       <div><label class="f" for="k2">K2 — Keep Out Distance (mils)</label><input type="number" id="k2" step="any" placeholder="19"></div>
       <div><label class="f" for="k1img">Imagem K1</label><input type="file" id="k1img" accept="image/*"></div>
       <div><label class="f" for="k2img">Imagem K2</label><input type="file" id="k2img" accept="image/*"></div>
-      <div style="grid-column:1/-1"><label class="f" for="figimg">Figura IPC 3-17 (opcional — substitui o diagrama padrão)</label>
-        <input type="file" id="figimg" accept="image/*"></div>
     </div>
   </div>
 

@@ -25,10 +25,16 @@ const THEAD = `<thead><tr>
   <th>Thickness<br><s>(mils)</s></th><th>Area<br>Ratio</th><th>Aspect<br>Ratio</th>
   <th>Qtd</th><th>Volume cm³</th></tr></thead>`;
 
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+/** Limite (em mícrons) do Five Ball Rule a partir do qual se recomenda pó Type 5. */
+const MESH_TYPE5_LIMIT = 38;
+
 /** Página 1 — Stencil Design Report */
-export function page1({ st, report, layout, assets = {}, tableLimit }) {
+export function page1({ st, report, layout, assets = {}, tableLimit, gerberLink }) {
   const faithful = layout === 'faithful';
   const logo = assets.logo ? `<img class="logo" src="${assets.logo}" alt="STENTEC">` : '';
+  const meshAlert = report.fiveBall <= MESH_TYPE5_LIMIT;
   const kpis = [
     ['ID', st, '', st.length > 9],
     ['Qty Apertures', int(report.qty), '', false],
@@ -79,9 +85,15 @@ export function page1({ st, report, layout, assets = {}, tableLimit }) {
 
   <div class="fiveball pnl">
     <h3>Largest recommended<br>powder diameter</h3><p class="ipc">IPC 7525C - 3.2.1</p>
-    <div class="fbval">${Math.round(report.fiveBall)}</div><p class="u">Microns</p>
+    <div class="fbval${meshAlert ? ' alert' : ''}">${Math.round(report.fiveBall)}</div><p class="u">Microns</p>
     <p class="rule">Five Ball Rule</p>
+    ${meshAlert ? `<p class="meshwarn">Attention: Type 5 solder size recommended</p>` : ''}
   </div>
+
+  ${gerberLink ? `<div class="linkbox pnl">
+    <p class="linktitle">Link para visualização online do projeto:</p>
+    <a class="linkurl" href="${esc(gerberLink)}" target="_blank" rel="noopener">${esc(gerberLink)}</a>
+  </div>` : ''}
 
   <footer><span>Página 1 de ${report.isStep ? 2 : 1}</span><span>${FOOTER}</span></footer>
 </section>`;

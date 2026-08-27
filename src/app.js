@@ -1,6 +1,12 @@
 import { parseRpt, parseFilename, build } from './engine.js';
+import { parseGerber, isGerberFile } from './gerber.js';
 import { toCsv, nf, int } from './format.js';
 import { page1, page2, pageTable, ROWS_PER_CONT_PAGE } from './report.js';
+
+/** Faz o parsing de um arquivo (.rpt ou .gbr) com o motor correto. */
+function parseFile(name, text, thickness) {
+  return isGerberFile(name) ? parseGerber(text, thickness) : parseRpt(text, thickness);
+}
 
 const $ = s => document.querySelector(s);
 const state = { files: [], report: null, assets: {}, step: {} };
@@ -83,12 +89,12 @@ function sync() {
 }
 
 async function addFiles(list) {
-  const arr = [...list].filter(f => /\.rpt$/i.test(f.name) || f.type === 'text/plain');
-  if (!arr.length) { msg('#fmsg', 'Nenhum arquivo .rpt reconhecido.', 'err'); return; }
+  const arr = [...list].filter(f => /\.(rpt|gbr|gtp|gbp)$/i.test(f.name) || f.type === 'text/plain');
+  if (!arr.length) { msg('#fmsg', 'Nenhum arquivo .rpt ou .gbr reconhecido.', 'err'); return; }
   for (const f of arr) {
     const text = await readText(f);
     const { thickness, st } = parseFilename(f.name);
-    const rows = parseRpt(text, thickness || 1);
+    const rows = parseFile(f.name, text, thickness || 1);
     if (!rows.length) { msg('#fmsg', `"${f.name}" não contém linhas de D-Code reconhecíveis.`, 'err'); continue; }
     if (state.files.some(x => x.name === f.name)) continue;
     state.files.push({ name: f.name, text, thickness, st, rows });
@@ -114,25 +120,25 @@ $('#gen').onclick = async () => {
   await assetsReady;
   try {
     let rows = [];
-    for (const f of state.files) rows = rows.concat(parseRpt(f.text, f.thickness));
+    for (const f of state.files) rows = rows.concat(parseFile(f.name, f.text, f.thickness));
     const report = build(rows);
     state.report = report;
     const st = ($('#st').value || state.files[0]?.st || 'ST').trim().toUpperCase();
-    const layout = document.querySelector('input[name=lay]:checked').value;
+    const layout = 'modern';
     const limit = +$('#limit').value || 0;
+    const gerberLink = ($('#gbrlink').value || '').trim();
 
     state.step = {
       k1: $('#k1').value !== '' ? nf(+$('#k1').value, 0) : null,
       k2: $('#k2').value !== '' ? nf(+$('#k2').value, 0) : null,
       k1Img: await readImg($('#k1img').files[0]),
       k2Img: await readImg($('#k2img').files[0]),
-      fig:   await readImg($('#figimg').files[0]),
     };
-    state.meta = { st, layout };
+    state.meta = { st, layout, gerberLink };
 
     const FIT = 13;                       // linhas que cabem no cartão da página 1
     const shown = limit ? Math.min(limit, report.rows.length) : Math.min(FIT, report.rows.length);
-    const parts = [page1({ st, report, layout, assets: state.assets, tableLimit: shown })];
+    const parts = [page1({ st, report, layout, assets: state.assets, tableLimit: shown, gerberLink })];
     if (report.isStep) parts.push(page2({ report, layout, step: state.step, assets: state.assets }));
     if (!limit && report.rows.length > FIT) {          // "todas": páginas de continuação
       for (let i = FIT; i < report.rows.length; i += ROWS_PER_CONT_PAGE) {
@@ -225,7 +231,7 @@ $('#reset').onclick = () => {
   $('#pages').innerHTML = ''; $('#preview').classList.remove('on');
   $('#kpis').classList.remove('on'); $('#kpis').innerHTML = '';
   $('#pdf').disabled = true; $('#csv').disabled = true;
-  ['#st','#k1','#k2'].forEach(s => { $(s).value = ''; delete $(s).dataset.touched; });
-  ['#k1img','#k2img','#figimg'].forEach(s => $(s).value = '');
+  ['#st','#k1','#k2','#gbrlink'].forEach(s => { $(s).value = ''; delete $(s).dataset.touched; });
+  ['#k1img','#k2img'].forEach(s => $(s).value = '');
   msg('#gmsg', ''); msg('#fmsg', '');
 };

@@ -38,11 +38,17 @@ const SKIP = ['Project file', 'Time/Date', 'Layer:', 'Dcode', '=====', '==='];
 export function parseFilename(name) {
   const base = String(name).replace(/\.[^.]+$/, '');
   const m = base.match(/^\s*([\d]+(?:[.,][\d]+)?)\s*st[\s_-]*(.+?)\s*$/i);
-  if (!m) return { thickness: null, st: base.toUpperCase() || null };
-  return {
-    thickness: parseFloat(m[1].replace(',', '.')),
-    st: 'ST' + m[2].toUpperCase().replace(/[\s_]/g, ''),
-  };
+  if (m) {
+    return {
+      thickness: parseFloat(m[1].replace(',', '.')),
+      st: 'ST' + m[2].toUpperCase().replace(/[\s_]/g, ''),
+    };
+  }
+  // Gerber costuma não trazer a espessura no nome, ex.: "42364_PASTE.gbr".
+  // Extrai a ST pelos dígitos iniciais e deixa a espessura para entrada manual.
+  const g = base.match(/^\s*(\d+)[\s_-]*(?:paste|pasta|stencil)?\s*$/i);
+  if (g) return { thickness: null, st: 'ST' + g[1] };
+  return { thickness: null, st: base.toUpperCase() || null };
 }
 
 /** Faz o parsing de um arquivo .rpt. Retorna uma linha por D-Code. */
