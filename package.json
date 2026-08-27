@@ -1,0 +1,11 @@
+{
+  "name": "stencil-design-report",
+  "version": "1.0.0",
+  "description": "Gerador do Stencil Design Report a partir de arquivos .rpt (Stentec)",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/engine.test.mjs",
+    "start": "python3 -m http.server 8080"
+  },
+  "private": true
+}

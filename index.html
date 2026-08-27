@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stencil Design Report — Stentec</title>
+<link rel="stylesheet" href="src/report.css">
+<style>
+:root{--bg:#0a1725;--panel:#0f2740;--line:#1d5480;--ink:#e8f2fb;--mut:#9db6cd;--acc:#29a3e0;--ok:#37b24d;--warn:#f2b90c;--err:#e03131}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Segoe UI',Tahoma,Arial,sans-serif}
+.app{max-width:1220px;margin:0 auto;padding:22px 18px 60px}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.top .sq{width:20px;height:20px;border:4px solid var(--acc);border-radius:4px}
+.top h1{margin:0;font-size:23px;letter-spacing:.4px}
+.top h1 b{color:var(--acc)}
+.sub{margin:0 0 20px;color:var(--mut);font-size:13.5px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:17px;margin-bottom:15px}
+.card>h2{margin:0 0 4px;font-size:15.5px;display:flex;align-items:center;gap:8px}
+.card>h2 .n{background:var(--acc);color:#06263c;width:21px;height:21px;border-radius:50%;
+  display:grid;place-items:center;font-size:12.5px;font-weight:700;flex:none}
+.card>p.hint{margin:0 0 13px;color:var(--mut);font-size:12.5px;padding-left:29px}
+#drop{border:2px dashed #2c6d9d;border-radius:10px;padding:30px 16px;text-align:center;cursor:pointer;
+  transition:.15s;background:rgba(41,163,224,.05)}
+#drop:hover,#drop.over{border-color:var(--acc);background:rgba(41,163,224,.13)}
+#drop b{display:block;font-size:15px;margin-bottom:4px}
+#drop span{color:var(--mut);font-size:12.5px}
+table.files{width:100%;border-collapse:collapse;margin-top:13px;font-size:13px}
+table.files th{text-align:left;color:var(--mut);font-weight:600;font-size:11.5px;
+  text-transform:uppercase;letter-spacing:.6px;padding:0 8px 6px;border-bottom:1px solid var(--line)}
+table.files td{padding:7px 8px;border-bottom:1px solid rgba(120,180,230,.13)}
+table.files input{width:88px;background:#0a2337;border:1px solid #2b6994;color:var(--ink);
+  border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit}
+table.files input.bad{border-color:var(--err);background:#2a1013}
+.tag{display:inline-block;background:#123f63;border:1px solid #2b7bad;color:#bfe4fb;
+  border-radius:20px;padding:1.5px 9px;font-size:11px}
+.rm{background:none;border:1px solid #40566d;color:#9fb6cb;border-radius:6px;
+  padding:3px 9px;cursor:pointer;font-size:12px}
+.rm:hover{border-color:var(--err);color:#ff8b8b}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+label.f{display:block;font-size:12.5px;color:var(--mut);margin:0 0 5px}
+input[type=text],input[type=number],select{width:100%;background:#0a2337;border:1px solid #2b6994;
+  color:var(--ink);border-radius:7px;padding:8px 10px;font-size:13.5px;font-family:inherit}
+input[type=file]{width:100%;font-size:12.5px;color:var(--mut)}
+.seg{display:flex;gap:8px;flex-wrap:wrap}
+.seg label{flex:1;min-width:190px;border:1px solid var(--line);border-radius:9px;padding:11px 13px;
+  cursor:pointer;background:#0c2338;transition:.15s}
+.seg label:hover{border-color:var(--acc)}
+.seg input{position:absolute;opacity:0;width:1px;height:1px;margin:0;pointer-events:none}
+.seg label:focus-within{outline:2px solid var(--acc);outline-offset:2px}
+.seg input:checked+span{color:#fff}
+.seg label:has(input:checked){border-color:var(--acc);background:rgba(41,163,224,.16);box-shadow:0 0 0 1px var(--acc) inset}
+.seg span{display:block;font-size:13.5px;font-weight:600}
+.seg em{display:block;font-style:normal;color:var(--mut);font-size:11.5px;margin-top:3px;line-height:1.4}
+.actions{display:flex;gap:11px;flex-wrap:wrap;align-items:center}
+button.go{background:var(--acc);border:0;color:#04283e;font-weight:700;border-radius:9px;
+  padding:12px 22px;font-size:14.5px;cursor:pointer;font-family:inherit}
+button.go:hover{filter:brightness(1.09)}
+button.go:disabled{opacity:.45;cursor:not-allowed}
+button.sec{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:9px;
+  padding:11px 18px;font-size:13.5px;cursor:pointer;font-family:inherit}
+button.sec:hover{border-color:var(--acc)}
+.msg{margin-top:12px;font-size:13px;padding:10px 13px;border-radius:8px;display:none}
+.msg.err{display:block;background:#2c1013;border:1px solid #6d2027;color:#ffb3b3}
+.msg.ok{display:block;background:#0d2a18;border:1px solid #216b39;color:#a9e8bf}
+.msg.warn{display:block;background:#2b2408;border:1px solid #6d5a12;color:#f4dd9a}
+#kpis{display:none;grid-template-columns:repeat(auto-fit,minmax(132px,1fr));gap:11px;margin-bottom:15px}
+#kpis.on{display:grid}
+.k{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+.k span{display:block;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.5px}
+.k strong{display:block;font-size:20px;margin-top:4px}
+.k.g strong{color:var(--ok)}.k.y strong{color:var(--warn)}.k.r strong{color:var(--err)}
+#preview{display:none;margin-top:6px}
+#preview.on{display:block}
+.pwrap{background:#061320;border:1px solid var(--line);border-radius:11px;padding:14px;overflow:auto}
+.scaler{transform-origin:top left}
+footer.f{color:#6f8ba3;font-size:11.5px;text-align:center;margin-top:26px;line-height:1.7}
+footer.f a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><span class="sq"></span><h1>STENTEC · <b>Stencil Design Report</b></h1></div>
+  <p class="sub">Envie os arquivos <code>.rpt</code> do projeto e gere o relatório em PDF + o CSV de dados.
+     Tudo é processado no seu navegador — nenhum arquivo é enviado para servidor.</p>
+
+  <div class="card">
+    <h2><span class="n">1</span> Arquivos .rpt</h2>
+    <p class="hint">A espessura e a ST são lidas do nome do arquivo (ex.: <code>5,5st42419.rpt</code> → 5,5 mils · ST42419).
+       Se a mesma ST tiver mais de uma espessura (step), envie todos os arquivos juntos.</p>
+    <div id="drop">
+      <b>Arraste os .rpt aqui</b>
+      <span>ou clique para escolher — pode selecionar vários de uma vez</span>
+      <input type="file" id="file" accept=".rpt,text/plain" multiple hidden>
+    </div>
+    <div id="flist"></div>
+    <div class="msg" id="fmsg"></div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">2</span> Identificação e layout</h2>
+    <div class="grid2" style="margin-bottom:14px">
+      <div><label class="f" for="st">ST (identificação do stencil)</label>
+        <input type="text" id="st" placeholder="ST42419"></div>
+      <div><label class="f" for="limit">Linhas na tabela do PDF</label>
+        <select id="limit">
+          <option value="0">Todas (a tabela cresce)</option>
+          <option value="13" selected>13 primeiras (igual ao Power BI)</option>
+        </select></div>
+    </div>
+    <div class="seg">
+      <label><input type="radio" name="lay" value="faithful" checked>
+        <span>Fiel ao Power BI</span><em>Mesmo fundo, logo e posições do relatório atual (REV31).</em></label>
+      <label><input type="radio" name="lay" value="modern">
+        <span>Moderno</span><em>Mesmos dados e fórmulas, visual novo e mais limpo.</em></label>
+    </div>
+  </div>
+
+  <div class="card" id="stepcard" style="display:none">
+    <h2><span class="n">3</span> Step Information <span class="tag" id="steptag"></span></h2>
+    <p class="hint">Detectei mais de uma espessura, então o relatório terá a página 2.
+       Informe K1 e K2 em mils e anexe as imagens de keep-out.</p>
+    <div class="grid2">
+      <div><label class="f" for="k1">K1 — Keep Out Distance (mils)</label><input type="number" id="k1" step="any" placeholder="5"></div>
+      <div><label class="f" for="k2">K2 — Keep Out Distance (mils)</label><input type="number" id="k2" step="any" placeholder="19"></div>
+      <div><label class="f" for="k1img">Imagem K1</label><input type="file" id="k1img" accept="image/*"></div>
+      <div><label class="f" for="k2img">Imagem K2</label><input type="file" id="k2img" accept="image/*"></div>
+      <div style="grid-column:1/-1"><label class="f" for="figimg">Figura IPC 3-17 (opcional — substitui o diagrama padrão)</label>
+        <input type="file" id="figimg" accept="image/*"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="n">4</span> Gerar</h2>
+    <div class="actions">
+      <button class="go" id="gen" disabled>Gerar relatório</button>
+      <button class="sec" id="pdf" disabled>Baixar PDF</button>
+      <button class="sec" id="csv" disabled>Baixar CSV</button>
+      <button class="sec" id="reset">Limpar</button>
+    </div>
+    <div class="msg" id="gmsg"></div>
+  </div>
+
+  <div id="kpis"></div>
+  <div id="preview"><div class="pwrap"><div class="scaler" id="pages"></div></div></div>
+
+  <footer class="f">
+    Fórmulas conforme IPC-7525C · motor validado contra o Power BI AR.AUTOMATION_REV31 (196 aberturas, 0 divergência).<br>
+    Rua Anésio Marciano, 122 – 13284-070 · Vinhedo · SP — <a href="https://www.stentec.com.br">www.stentec.com.br</a>
+  </footer>
+</div>
+
+<script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>
